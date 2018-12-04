@@ -290,7 +290,7 @@ function CanvasState(canvas) {
                     dlAnchorElem.setAttribute("href",     dataStr     );
                     dlAnchorElem.setAttribute("download", "scene.json");
                     dlAnchorElem.click();
-                    var newUrl = "home.html";
+                    var newUrl = "index.html";
                     window.location = newUrl;
                     return;
                 }
