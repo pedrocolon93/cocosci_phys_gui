@@ -427,6 +427,11 @@ function start_web_gaze_tracking() {
 }
 
 function init() {
+    alert("Your task is to move the windows from the center of the screen to inside the red zone. " +
+        "The site will be recording your expressions. Align the face model in the image to your face. " +
+        "When it is aligned click anywhere on the screen and a begin alert will pop up.  Close it and you can begin the task. " +
+        "When you are done click on the Finished button below. The screen may freeze occasionally while starting up just give " +
+        "it some seconds.");
     window.webgazeobs = {x:[],y:[],time:[],shapeStates:[],mx:[],my:[]};
     if (!window.testConfig.replayEnabled) {
         start_web_gaze_tracking();
