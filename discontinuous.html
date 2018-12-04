@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Test</title>
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src="js/webgazer.min.js"></script>
+</head>
+<body>
+<canvas id="canvas1" width="1420" height="730" style="border:1px solid #000000;">
+
+</canvas>
+<button id="done">Finished</button>
+<button id="replay">Replay</button>
+<a id="downloadAnchorElem" style="display:none"></a>
+<script>
+    window.testConfig = {
+        invertx:false,
+        inverty:false,
+        skipframes:20,
+        randomtarget:true,
+        falling:false,
+        replayEnabled:false
+    }
+</script>
+<script src="js/test.js"></script>
+
+</body>
+</html>
