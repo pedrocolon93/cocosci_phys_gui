@@ -183,10 +183,73 @@ function CanvasState(canvas) {
             // myState.selection.x = posnew;
             myState.valid = false; // Something's dragging so we must redraw
         }
+        var mouse = myState.getMouse(e);
+        var mx = mouse.x;
+        var my = mouse.y;
+        window.canvasState.mx = mx;
+        window.canvasState.my = my;
     }, true);
     canvas.addEventListener('mouseup', function(e) {
         myState.dragging = false;
     }, true);
+    try{
+    document.getElementById('start').onclick = function(){
+        var myState = window.canvasState;
+        if(window.testConfig.selfguiding||false){
+            function selfguiding() {
+                /*
+                1 left
+                2 right
+                3 up
+                4 down
+                 */
+                var deltaX = 0;
+                var deltaY = 0;
+                var mag = 2;
+                var decision = window.webgazeobs.targetDecision;
+                // alert(decision);
+                switch (decision) {
+                    case 1:
+                        deltaX = -1*mag;
+                        break;
+                    case 2:
+                        deltaX = 1*mag;
+                        break;
+                    case 3:
+                        deltaY = -1*mag;
+                        break;
+                    case 4:
+                        deltaY = 1*mag;
+                        break;
+                }
+                for (let i = 0; i < myState.shapes.length; i++) {
+                    myState.shapes[i].selectable = false;
+                }
+                var i = 0;
+                function replay(i, myState, deltaX, deltaY) {
+                    myState.shapes[i].x += deltaX;
+                    myState.shapes[i].y += deltaY;
+                    myState.valid = false;
+                    myState.draw()
+                    if(!(myState.shapes[myState.shapes.length-1].contains(myState.shapes[i].x,myState.shapes[i].y))){
+                        setTimeout(replay, 30, i, myState, deltaX, deltaY)
+                    }
+                    else{
+                        i++;
+                        if(myState.shapes[i] instanceof Window){
+                            setTimeout(replay, 30, i,myState, deltaX, deltaY)
+                        }
+                    }
+                }
+                setTimeout(replay, 30, i,myState, deltaX, deltaY)
+            }
+            setTimeout(selfguiding,100)
+
+        }
+    };}
+    catch (e) {
+        console.log(e);
+    }
     // double click for making new shapes
     // canvas.addEventListener('dblclick', function(e) {
     //     var mouse = myState.getMouse(e);
@@ -205,6 +268,12 @@ function CanvasState(canvas) {
     //     document.getElementById('webgazerFaceOverlay').style.left = document.getElementById('webgazerFaceOverlay').style.left + offset;
     //     document.getElementById('webgazerFaceFeedbackBox').style.left = document.getElementById('webgazerFaceFeedbackBox').style.left + offset;
     // },100);
+    if(myState.falling){
+        myState.falling = false;
+        document.getElementById('start').onclick = function(){
+           myState.falling=true;
+        };
+    }
     myState.drawinterval = setInterval(function() {
         if (myState.falling){
             for(let i=0;i<myState.shapes.length;i++){
@@ -251,9 +320,9 @@ function CanvasState(canvas) {
                 return
             }
         }
-        webgazer.pause();
         clearInterval(myState.finishinterval);
         // clearInterval(myState.drawinterval);
+        alert("")
         document.getElementById('done').onclick = function() {
             var replaytime = 1;
             if (window.replayEnabled) {
@@ -312,11 +381,12 @@ function CanvasState(canvas) {
             };
             setTimeout(replay,replaytime,0);
         };
-
-
-
-
-
+        try {
+            webgazer.end();
+        }
+        catch (e) {
+            console.log(e);
+        }
 
     }, 500);
 }
@@ -394,19 +464,20 @@ CanvasState.prototype.getMouse = function(e) {
 
 // If you dont want to use <body onLoad='init()'>
 // You could uncomment this init() reference and place the script reference inside the body tag
-init();
+window.onload=init;
 
 function start_web_gaze_tracking() {
-    webgazer.showGazeDot = true;
     window.ready = false;
-    webgazer.setGazeListener(function(data, elapsedTime) {
+    // webgazer.clearData();
+    webgazer.setRegression('ridge') /* currently must set regression and tracker */
+    .setTracker('clmtrackr').setGazeListener(function(data, elapsedTime) {
         if (data == null) {
             console.log("Nodata, returning");
             return;
         }
         if(!window.ready){
             window.ready = true;
-            alert("Begin!")
+            alert("Begin!");
         }
         var offsetX = window.canvasState.stylePaddingLeft + window.canvasState.styleBorderLeft + window.canvasState.htmlLeft;
         var offsetY = window.canvasState.stylePaddingTop + window.canvasState.styleBorderTop + window.canvasState.htmlTop;
@@ -427,11 +498,29 @@ function start_web_gaze_tracking() {
 }
 
 function init() {
-    alert("Your task is to move the windows from the center of the screen to inside the red zone. " +
-        "The site will be recording your expressions. Align the face model in the image to your face. " +
-        "When it is aligned click anywhere on the screen and a begin alert will pop up.  Close it and you can begin the task. " +
-        "When you are done click on the Finished button below. The screen may freeze occasionally while starting up just give " +
-        "it some seconds.");
+    // var requestedBytes = 1024*1024*10; // 10MB
+    //
+    // navigator.webkitPersistentStorage.requestQuota (
+    //     requestedBytes, function(grantedBytes) {
+    //         window.requestFileSystem(PERSISTENT, grantedBytes, onInitFs, errorHandler);
+    //
+    //     }, function(e) { console.log('Error', e); }
+    // );
+
+    if(window.testConfig.selfguiding||false) {
+        alert("Your task is to watch the windows as they move to inside the red zone. " +
+            "The site will be recording your expressions. Align the face model in the image to your face. " +
+            "When it is aligned click anywhere on the screen and a begin alert will pop up.  Close it and you can begin the task. " +
+            "When you are done click on the Finished button below. The screen may freeze occasionally while starting up just give " +
+            "it some seconds.");
+    }
+    else {
+        alert("Your task is to move the windows from the center of the screen to inside the red zone. " +
+            "The site will be recording your expressions. Align the face model in the image to your face. " +
+            "When it is aligned click anywhere on the screen and a begin alert will pop up.  Close it and you can begin the task. " +
+            "When you are done click on the Finished button below. The screen may freeze occasionally while starting up just give " +
+            "it some seconds.");
+    }
     window.webgazeobs = {x:[],y:[],time:[],shapeStates:[],mx:[],my:[]};
     if (!window.testConfig.replayEnabled) {
         start_web_gaze_tracking();
@@ -445,7 +534,7 @@ function init() {
     wIndow = new Window(window.innerWidth/2,500,200,100,0,true);
     s.addShape(wIndow);
     // var redarea = new Shape(s.width*(3/4),0,s.width*(1/4),s.height,'red',false);
-    if(window.testConfig.randomtarget){
+    if(window.testConfig.randomtarget||false){
         /*
         1 left
         2 right
@@ -499,41 +588,45 @@ function init() {
             reader.readAsText(f);
         }
     }
-    document.getElementById('files').addEventListener('change', handleFileSelect, false);
+    try {
+        document.getElementById('files').addEventListener('change', handleFileSelect, false);
+        document.getElementById('replay').onclick = function() {
+            var replaytime = 1;
+            if (window.testConfig.replayEnabled) {
+                replaytime = 50;
 
-    document.getElementById('replay').onclick = function() {
-        var replaytime = 1;
-        if (window.testConfig.replayEnabled) {
-            replaytime = 50;
-
-            var replay = function (i) {
-                if (i >= window.webgazeobs.x.length) {
-                    return;
-                }
+                var replay = function (i) {
+                    if (i >= window.webgazeobs.x.length) {
+                        return;
+                    }
                     //clear
-                var myState = window.canvasState;
-                myState.shapes = [];
-                myState.valid = false;
-                myState.draw();
-                //redraw
-                for (let o of window.webgazeobs.shapeStates[i]) {
-                    if(o.visible)
-                        myState.addShape(Window.fromJson(o));
-                }
-                myState.addShape(new Shape(window.webgazeobs.x[i], window.webgazeobs.y[i], 3, 3, 'purple'));
-                myState.addShape(new Shape(window.webgazeobs.mx[i], window.webgazeobs.my[i], 4, 4, 'red'));
+                    var myState = window.canvasState;
+                    myState.shapes = [];
+                    myState.valid = false;
+                    myState.draw();
+                    //redraw
+                    for (let o of window.webgazeobs.shapeStates[i]) {
+                        if(o.visible)
+                            myState.addShape(Window.fromJson(o));
+                    }
+                    myState.addShape(new Shape(window.webgazeobs.x[i], window.webgazeobs.y[i], 3, 3, 'purple'));
+                    myState.addShape(new Shape(window.webgazeobs.mx[i], window.webgazeobs.my[i], 4, 4, 'red'));
 
-                myState.valid = false;
-                myState.draw();
+                    myState.valid = false;
+                    myState.draw();
 
-                i++;
-                setTimeout(replay,replaytime,i)
-            };
-            setTimeout(replay,replaytime,0);
+                    i++;
+                    setTimeout(replay,replaytime,i)
+                };
+                setTimeout(replay,replaytime,0);
 
 
-        }
-    };
+            }
+        };
+    }
+    catch (e) {
+        console.log(e);
+    }
 }
 
 
