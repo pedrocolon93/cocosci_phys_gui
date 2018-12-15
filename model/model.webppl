@@ -1,0 +1,248 @@
+var windows = [[{"name":"window1","x":10,"y":20},{"name":"window2","x":120,"y":240},{"name":"window3","x":1,"y":2}],[{"name":"window1","x":10,"y":20},{"name":"window2","x":120,"y":240},{"name":"window3","x":1,"y":2}],[{"name":"window1","x":30,"y":40},{"name":"window2","x":121,"y":245},{"name":"window3","x":12,"y":2+20}],[{"name":"window1","x":10,"y":20},{"name":"window2","x":120,"y":240},{"name":"window3","x":1,"y":2}]];
+var mousePos = [{"name":"window1","x":10,"y":20},{"name":"window1","x":30,"y":40},{"name":"window1","x":30,"y":40},{"name":"window1","x":31,"y":41},{"name":"window1","x":34,"y":50},{"name":"window1","x":40,"y":60}];
+var p1 = {
+  'x':10,
+  'y':20
+};
+var p2 = {
+  'x':15,
+  'y':40
+};
+var gazePos = [p1,p2,p2,p1,p1,p2,p2,p1]
+//Distance function
+var distance = function(point1,point2){
+  return Math.sqrt(Math.pow((point1.x-point2.x),2)+Math.pow((point1.y-point2.y),2))
+};
+// print("Distance test")
+// print(distance(p1,p2));
+//Window position
+var getWindowPos = function(window_list,window_name){
+  var res = map(function(x){
+               if(x.name===window_name){
+                 var result = {"x":x['x']+100,"y":x['y']+50};
+                 return result;
+               }
+               },window_list);
+  var res = find(function(_x){return _x!=null}, res);
+  return res;
+};
+// print("Window pos test")
+// print(getWindowPos(windows[0],"window1"))
+
+var sigma = 30;
+
+//Looking Window Loook
+// print("Looking look test");
+var lookingLookWindow = function(window, t){
+  return Math.exp(-(distance(getWindowPos(windows[t], window),gazePos[t])/(2*Math.pow(sigma,2))));
+}
+// print(lookingLookWindow("window1",0))
+//Looking mouse look
+var lookingMouseLook = function(t){
+//   print("Checking looking look")
+  return Math.exp(-(distance(mousePos[t],gazePos[t])/(2*Math.pow(sigma,2))));
+}
+// print("Looking mouse look");
+// print(lookingMouseLook(0));
+//Predicting look
+// print("Predicting window look look");
+var predictingWindowLook = function(window,t,T){
+  var sum = sum(map(function(i){
+    var eta = 0.1;
+    return eta * Math.exp(-eta*(i-t)) * Math.exp(-(distance(getWindowPos(windows[i],window),gazePos[t])/(2*Math.pow(sigma,2))));
+  },_.range(t+1,T)));
+  return sum;
+}
+// print(predictingWindowLook("window1",0,2))
+// print("Predicting mouse look look");
+var predictingMouseLook = function(t,T){
+  var sum = sum(map(function(i){
+    var eta = 0.1;
+    return eta * Math.exp(-eta*(i-t)) * Math.exp(-(distance(mousePos[i],gazePos[t])/(2*Math.pow(sigma,2))));
+  },_.range(t+1,T)));
+  return sum;
+}
+// print(predictingMouseLook(0,2))
+// //Reinforcement look
+// print("Reinforcement looks")
+var reinforcingWindowLook = function(window,t){
+  var range = _.range(t-5,t);
+  var jRange = map(function(i){
+    return i-5<0?0:i;
+  },range);
+  var sum = sum(map(function(i){
+    var eta = 0.05;
+    return eta * Math.exp(-eta*(t-i)) * Math.exp(-(distance(getWindowPos(windows[i],window),gazePos[t])/(2*Math.pow(sigma,2))));
+  },jRange));
+//   print("returning sum")
+  return sum;
+}
+// print(reinforcingWindowLook("window1",2))
+var reinforcingMouseLook = function(t){
+  var range = _.range(t-5,t);
+  var jRange = map(function(i){
+    return i-5<0?0:i;
+  },range);
+  var sum = sum(map(function(i){
+    var eta = 0.05;
+    return eta * Math.exp(-eta*(t-i)) * Math.exp(-(distance(mousePos[i],gazePos[t])/(2*Math.pow(sigma,2))));
+  },jRange));
+  return sum;
+}
+// print(reinforcingMouseLook(2))
+
+//Original Code
+var transition = function(s) {
+  return s ? flip(0.7) : flip(0.3);
+};
+
+var observation = function(s) {
+  return s ? flip(0.9) : flip(0.1);
+};
+
+// original code
+// var hmm = function(n) {
+//   var prev = (n == 1) ? {states: [true], observations: []} : hmm(n - 1);
+//   var newState = transition(prev.states[prev.states.length - 1]);
+//   var newObs = observation(newState);
+//   return {
+//     states: prev.states.concat([newState]),
+//     observations: prev.observations.concat([newObs])
+//   };
+// };
+
+var max_x = 1400;
+var max_y = 700;
+var windowNames = ["window1","window2","window3"];
+//Other look
+var otherLook= function(){
+  return 1/(max_x*max_y);
+}
+var grabbing_look_cats = ["looking_mouse","looking_window_1","looking_window2",
+                          "looking_window3","reinforce_mouse","reinforce_window_1",
+                          "reinforce_window_2","reinforce_window_3","prediction_mouse",
+                          "prediction_window_1","prediction_window_2","prediction_window_3"
+                          ,"other"];
+var not_grabbing_look_cats = ["looking_mouse","looking_window_1","looking_window2",
+                          "looking_window3","other"];;
+
+var generateEmissions = function(n){
+    var n = n-1;
+    var emissionProbs = []
+    //Looking looks
+//     print("Generating looking looks")
+    var eprobs1 = emissionProbs.concat(lookingMouseLook(n));
+    var res = map(function(window){
+      lookingLookWindow(window,n);
+    },windowNames);
+    var eprobs = eprobs1.concat(res)
+//     print("new eprobs")
+    //Reinforcing looks
+//     print("Generating reinforcing looks")
+    var eprobs1 = eprobs.concat(reinforcingMouseLook(n))
+    var res = map(function(window){
+      reinforcingWindowLook(window,n);
+    },windowNames);
+    var eprobs = eprobs1.concat(res)
+    //Predicting looks
+//     print("Generating predicting looks")
+    var eprobs1 = eprobs.concat(predictingMouseLook(n))
+    var res =map(function(window){
+     predictingWindowLook(window,n);
+    },windowNames)
+    var eprobs = eprobs1.concat(res)
+    //Other looks
+//     print("Generating other looks")
+    var eprobs1 = eprobs.concat(otherLook())
+//     print(eprobs)
+    return eprobs1;
+};
+
+var hmm = function(n,actualObs) {
+  var prev = (n == 1) ? {states: [], observations: []} : hmm(n - 1,actualObs);
+//   print("Beginning hmm recursion in")
+//   print(n)
+  
+  if(prev.states.length==0){
+//     print("Initial state");
+    //uninformative prior
+    var xpos = Categorical({'vs':_.range(0,max_x,1)});
+    var ypos = Categorical({'vs':_.range(0,max_y,1)});
+//     var obs = {'x':sample(xpos),'y':sample(ypos)};
+    
+//     print(actualObs)
+    var obs = actualObs[n-1]
+    var initialUniformPrior = Categorical({"vs":not_grabbing_look_cats});
+//     print(initialUniformPrior)
+    var initialState = sample(initialUniformPrior)
+//     print(initialState)
+//     print(prev)
+    var newStates = prev.states.concat(initialState);
+    var newObs = prev.observations.concat(obs);
+//     print("created new init")
+    var a = newStates[newStates.length - 1];
+    var b = newObs[newObs.length - 1];
+//     print("A, b")
+//     print(a)
+//     print(b)
+       observe(initialUniformPrior,a)
+//     observe(initialUniformPrior,a);
+//     print("Printing previous")
+    var prev = {"states":newStates,"observations":newObs}
+//     print(prev)
+    return prev;
+  }
+  else{
+//     print("Recursive state");
+      var emissionProbs = generateEmissions(n);
+      var xpos = Categorical({'vs':_.range(0,max_x,1)});
+      var ypos = Categorical({'vs':_.range(0,max_y,1)});
+//       var obs = {'x':sample(xpos),'y':sample(ypos)};
+      var obs = actualObs[n-1]
+
+      var stateEmitter = Categorical({"vs":grabbing_look_cats,"ps":emissionProbs});
+//       print(stateEmitter)
+      var state = sample(stateEmitter);
+//       print("concating new state and obs")
+      var newStates = prev.states.concat(state);
+      var newObs = prev.observations.concat(obs);
+      var a = newStates[newStates.length - 1];
+      var b = newObs[newObs.length - 1];
+//       print(a)
+//       print(b)
+    
+      observe(stateEmitter,a)
+      var prev = {"states":newStates,"observations":newObs}
+//       print(prev)
+      return prev;
+  }
+};
+
+var trueObservations = [p1,p2,p2];
+// print(hmm(4))
+// var dist = Infer({method: 'enumerate'}, function() {
+//   var r = hmm(4);
+//   factor(_.isEqual(r.observations, trueObservations) ? 0 : -Infinity);
+//   return r.states;
+// });
+// var dist = Infer({method: 'MCMC', samples: 100000,callbacks: [editor.MCMCProgress()]},  function() {
+var dist = Infer({method: 'MCMC', samples: 100000,callbacks: [
+  {
+      setup: function(n) {
+        var total = n;
+      },
+      iteration: function(trace) {
+        // completed += 1;
+        console.log("iterating!");
+      }
+    }
+    ]},  function() {
+
+  var r = hmm(3,trueObservations);
+//   factor(_.isEqual(r.observations, trueObservations) ? 0 : -Infinity);
+  return r.states;
+})
+
+
+// viz()
+viz.table(dist);

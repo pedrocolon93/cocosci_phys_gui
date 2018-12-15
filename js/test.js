@@ -11,7 +11,7 @@
 // Constructor for Shape objects to hold data for all drawn objects.
 // For now they will just be defined as rectangles.
 class Shape{
-    constructor(x, y, w, h, fill,selectable){
+    constructor(x, y, w, h, fill,selectable,name){
         this.x = x || 0;
         this.y = y || 0;
         this.w = w || 1;
@@ -19,6 +19,7 @@ class Shape{
         this.fill = fill || '#AAAAAA';
         this.selectable = selectable;
         this.visible=true;
+        this.name = name||"default";
     }
     draw(ctx){
         ctx.fillStyle = this.fill;
@@ -34,8 +35,8 @@ class Shape{
 }
 
 class Window extends Shape{
-    constructor(x, y, w, h, fill,selectable){
-       super(x,y,w,h,fill,selectable);
+    constructor(x, y, w, h, fill,selectable,name){
+       super(x,y,w,h,fill,selectable,name);
     }
     static fromJson(json){
         return new Window(json.x,json.y,json.w,json.h,0,json.visible)
@@ -131,8 +132,8 @@ function CanvasState(canvas) {
 
         var mx = mouse.x;
         var my = mouse.y;
-        myState.mx = mx
-        myState.my = my
+        myState.mx = mx;
+        myState.my = my;
         var shapes = myState.shapes;
         var l = shapes.length;
         for (var i = l-1; i >= 0; i--) {
@@ -486,27 +487,21 @@ function start_web_gaze_tracking() {
         window.webgazeobs["mx"].push(window.canvasState.mx||0);
         window.webgazeobs["my"].push(window.canvasState.my||0);
         window.webgazeobs["time"].push(elapsedTime);
+        window.webgazeobs["dragging"].push(window.canvasState.dragging);
         var shapestates = [];
         for(let o of window.canvasState.shapes){
             if(o instanceof Window){
-                shapestates.push(new Window(o.x,o.y,o.w,o.h))
+                var wi = new Window(o.x,o.y,o.w,o.h,o.fill,o.selectable,o.name);
+                wi.visible = o.visible;
+                shapestates.push(wi)
             }
         }
         window.webgazeobs["shapeStates"].push(shapestates)
     }).begin();
-
 }
 
-function init() {
-    // var requestedBytes = 1024*1024*10; // 10MB
-    //
-    // navigator.webkitPersistentStorage.requestQuota (
-    //     requestedBytes, function(grantedBytes) {
-    //         window.requestFileSystem(PERSISTENT, grantedBytes, onInitFs, errorHandler);
-    //
-    //     }, function(e) { console.log('Error', e); }
-    // );
 
+function init() {
     if(window.testConfig.selfguiding||false) {
         alert("Your task is to watch the windows as they move to inside the red zone. " +
             "The site will be recording your expressions. Align the face model in the image to your face. " +
@@ -521,17 +516,17 @@ function init() {
             "When you are done click on the Finished button below. The screen may freeze occasionally while starting up just give " +
             "it some seconds.");
     }
-    window.webgazeobs = {x:[],y:[],time:[],shapeStates:[],mx:[],my:[]};
+    window.webgazeobs = {x:[],y:[],time:[],shapeStates:[],mx:[],my:[],dragging:[]};
     if (!window.testConfig.replayEnabled) {
         start_web_gaze_tracking();
     }
     var s = new CanvasState(document.getElementById('canvas1'));
     window.canvasState = s;
-    var wIndow = new Window(window.innerWidth/2,300,200,100,0,true);
+    var wIndow = new Window(window.innerWidth/2,300,200,100,0,true,"window1");
     s.addShape(wIndow);
-    wIndow = new Window(window.innerWidth/2+10,400,200,100,0,true);
+    wIndow = new Window(window.innerWidth/2+10,400,200,100,0,true,"window2");
     s.addShape(wIndow);
-    wIndow = new Window(window.innerWidth/2,500,200,100,0,true);
+    wIndow = new Window(window.innerWidth/2,500,200,100,0,true,"window3");
     s.addShape(wIndow);
     // var redarea = new Shape(s.width*(3/4),0,s.width*(1/4),s.height,'red',false);
     if(window.testConfig.randomtarget||false){
