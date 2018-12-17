@@ -563,7 +563,7 @@ function init() {
         var redarea = new Shape(s.width*(3/4),0,s.width*(1/4),s.height,'red',false);
         s.addShape(redarea);
     }
-    function handleFileSelect(evt) {
+    function handleObsFileSelect(evt) {
         var files = evt.target.files; // FileList object
 
         // Loop through the FileList and render image files as thumbnails.
@@ -583,12 +583,56 @@ function init() {
             reader.readAsText(f);
         }
     }
+    function handleFileSelect(evt) {
+        var files = evt.target.files; // FileList object
+
+        // Loop through the FileList and render image files as thumbnails.
+        for (var i = 0, f; f = files[i]; i++) {
+            var reader = new FileReader();
+
+            // Closure to capture the file information.
+            reader.onload = (function(theFile) {
+                return function(e) {
+                    // Render thumbnail.
+                    console.log("preds loaded");
+                    var predictions = JSON.parse(e.target.result)
+                    console.log(predictions)
+                    console.log(predictions.probs)
+                    function indexOfMax(arr) {
+                        if (arr.length === 0) {
+                            return -1;
+                        }
+
+                        var max = arr[0];
+                        var maxIndex = 0;
+
+                        for (var i = 1; i < arr.length; i++) {
+                            if (arr[i] > max) {
+                                maxIndex = i;
+                                max = arr[i];
+                            }
+                        }
+
+                        return maxIndex;
+                    }
+                    var maxidx = indexOfMax(predictions.probs);
+                    console.log(maxidx)
+                    console.log(predictions.support[maxidx]);
+                    window.preds = predictions.support[maxidx];
+                    // print(e)
+                };
+            })(f);
+
+            // Read in the image file as a data URL.
+            reader.readAsText(f);
+        }
+    }
     try {
-        document.getElementById('files').addEventListener('change', handleFileSelect, false);
+        document.getElementById('files').addEventListener('change', handleObsFileSelect, false);
         document.getElementById('replay').onclick = function() {
             var replaytime = 1;
             if (window.testConfig.replayEnabled) {
-                replaytime = 50;
+                replaytime = 100;
 
                 var replay = function (i) {
                     if (i >= window.webgazeobs.x.length) {
@@ -609,8 +653,29 @@ function init() {
 
                     myState.valid = false;
                     myState.draw();
+                    try {
+                        console.log("trying to predict");
+                        // document.getElementById("prediction")
+                        var predstring = "";
+                        try{
+                            predstring+= window.preds[i-1]
+                        }
+                        catch (e) {
 
-                    i++;
+                        }
+                        predstring+="\t" +window.preds[i]+"\t"
+                        try{
+                        predstring+=window.preds[i+1]
+                        }
+                        catch (e) {
+                            
+                        }
+                        document.getElementById("prediction").innerHTML = predstring
+                    }
+                    catch (e) {
+                        console.log(e)
+                    }
+                        i++;
                     setTimeout(replay,replaytime,i)
                 };
                 setTimeout(replay,replaytime,0);
@@ -618,6 +683,9 @@ function init() {
 
             }
         };
+        document.getElementById('modeldata').addEventListener('change', handleFileSelect, false);
+
+
     }
     catch (e) {
         console.log(e);
