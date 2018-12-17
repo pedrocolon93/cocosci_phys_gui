@@ -323,7 +323,7 @@ function CanvasState(canvas) {
         }
         clearInterval(myState.finishinterval);
         // clearInterval(myState.drawinterval);
-        alert("")
+        alert("Finished!");
         document.getElementById('done').onclick = function() {
             var replaytime = 1;
             if (window.replayEnabled) {
@@ -505,7 +505,16 @@ function init() {
     if(window.testConfig.selfguiding||false) {
         alert("Your task is to watch the windows as they move to inside the red zone. " +
             "The site will be recording your expressions. Align the face model in the image to your face. " +
+            "When it is aligned click anywhere on the screen and a begin alert will pop up.  Close it and you can begin the task. You need" +
+            "to click on the start button" +
+            "When you are done click on the Finished button below. The screen may freeze occasionally while starting up just give " +
+            "it some seconds.");
+    }
+    else if(window.testConfig.falling||false){
+        alert("Your task is to move the windows from the center of the screen to inside the red zone. " +
+            "The site will be recording your expressions. Align the face model in the image to your face. " +
             "When it is aligned click anywhere on the screen and a begin alert will pop up.  Close it and you can begin the task. " +
+            "Close it and you can begin the task. You need to click on the start button after this!" +
             "When you are done click on the Finished button below. The screen may freeze occasionally while starting up just give " +
             "it some seconds.");
     }
