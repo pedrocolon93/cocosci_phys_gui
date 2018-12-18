@@ -1,0 +1,7 @@
+#Readme for GUI physics
+##Getting started
+To begin the experiments, all that needs to be done is run the index.html file.  When the user runs the experiments, every time he or she clicks finished, the experiment will download a file.  In the end, the user should have 5 scene [(#)].json files.  To view what the user has done during the test, open the replayer.html file. 
+##Generating model predictions
+To generate model predictions, you need to copy the contents of model/model.webppl to: http://webppl.org/#demos.  For every experiment, you need to copy the contents of scene.json into a string on the first line: var expres = JSON.parse('string goes here');. After this simply hit the run button at the bottom.  When the model finishes, the string that gets output is the result of the model. Make sure that you save that string into a file!
+##Replaying 
+To replay a user's experiment and see the predictions, open the replayer.html.  In the bottom of the file, there are 2 buttons to attach files.  In the left button you attach the scene.json file that you generate from the experiments (only attach one!) and on the right you must attach the file that you created from the previous part.  If you dont attach this, there will be no predictions on the bottom. 
